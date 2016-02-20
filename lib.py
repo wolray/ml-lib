@@ -2,7 +2,6 @@ from numpy import *
 from scipy import io, optimize as op, special as sp
 
 def myprint(t):
-    print()
     for i in t:
         print(i.flatten())
 
