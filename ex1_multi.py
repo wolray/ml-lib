@@ -1,6 +1,7 @@
-from lib_ln import *
+from lib import *
 
-X,y=load_data('ex2data2.txt')
+X,y=load_data('ex1data2.txt')
+X=norm_feature(X)
 alpha=0.01
 iters=[10,100,1000,5000]
 n0=X.shape[1]-1
