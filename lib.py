@@ -121,6 +121,12 @@ def opredict(t,X,y):
     num=m-count_nonzero(p-y.flatten())
     print('%.2f%%' %(num*100/m))
 
+def randt(n):
+    t_count=0
+    for i in range(len(n)-1):
+        t_count+=(n[i]+1)*n[i+1]
+    return 1-2*random.random(t_count)
+
 def sigmoid(z):
     return sp.expit(z)
     # return 1/(1+exp(-z))
