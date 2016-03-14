@@ -3,7 +3,7 @@ from numpy import *
 from scipy import io, optimize as op, special as sp
 
 def h(X,t):
-    return sp.expit(X.dot(t))
+    return sp.expit(X.dot(t)) # 1/(1+exp(-z))
 
 def hg(x):
     return x*(1-x)
@@ -11,23 +11,27 @@ def hg(x):
 def hi(X,t):
     return X.dot(t)
 
-def icost(t,X,y):
+def icost(t,X,y,lamb):
     m=y.shape[0]
-    return sum((hi(X,t)-y)**2)/(2*m)
+    return sum((hi(X,t)-y)**2)/(2*m)+sum(t[1:]**2)*lamb/(2*m)
 
-def ifmin(t0,X,y):
+def ifmin(t0,X,y,lamb):
     y=y.flatten()
-    result=op.fmin(icost,t0,args=(X,y),maxiter=500,disp=False,full_output=True)
+    result=op.fmin(icost,t0,args=(X,y,lamb),maxiter=500,disp=False,full_output=True)
     t,J=result[0],result[1]
     return t,J
 
-def igrad(t,X,y):
-    m=y.shape[0]
-    return X.T.dot(hi(X,t)-y)/m
+def ifmin_cg(t0,X,y,lamb):
+    y=y.flatten()
+    return op.fmin_cg(icost,fprime=igrad,x0=t0,args=(X,y,lamb),maxiter=50,disp=False)
 
-def igrad_des(t0,X,y,alpha,iters):
+def igrad(t,X,y,lamb):
+    m=X.shape[0]
+    return X.T.dot(hi(X,t)-y)/m+r_[t[:1]*0,t[1:]]*lamb/m
+
+def igrad_des(t0,X,y,lamb,alpha,iters):
     for i in range(iters):
-        t0-=alpha*igrad(t0,X,y)
+        t0-=alpha*igrad(t0,X,y,lamb)
     return t0
 
 def inorm_eqn(X,y):
@@ -83,7 +87,7 @@ def ngrad(t,n,X,yy,lamb):
             return nx(k,t,n,X)-yy
     def gg(k):
         m=X.shape[0]
-        return nx(k-1,t,n,X).T.dot(dt(k))/m+r_[0*nt(k,t,n)[:1],nt(k,t,n)[1:]*lamb/m]
+        return nx(k-1,t,n,X).T.dot(dt(k))/m+r_[nt(k,t,n)[:1]*0,nt(k,t,n)[1:]*lamb/m]
     g=[]
     for i in range(1,len(n)):
         g=append(g,gg(i))
@@ -143,7 +147,7 @@ def ofmin_cg(t0,X,y,lamb):
 
 def ograd(t,X,y,lamb):
     m=X.shape[0]
-    return X.T.dot(h(X,t)-y)/m+sum(r_[0*t[:1],t[1:]*lamb/m])
+    return X.T.dot(h(X,t)-y)/m+r_[t[:1]*0,t[1:]*lamb/m]
 
 def opredict(t,X,y):
     m=X.shape[0]
