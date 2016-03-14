@@ -6,7 +6,6 @@ n=[400,25,10]
 lamb=0
 
 t=append(t1_trans.T,t2_trans.T)
-yk=yy(n,y)
 
 npredict(t,n,X,y)
 print('ex3_nn: 97.5%')

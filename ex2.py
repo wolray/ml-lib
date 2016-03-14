@@ -7,6 +7,6 @@ t0=zeros((n0+1,1))
 
 J0=ocost(t0,X,y,lamb)
 t,J=ofmin(t0,X,y,lamb)
-prob=sigmoid(array([1,45,85]).dot(t))
+prob=h(array([1,45,85]),t)
 print(J0,J,prob)
 print('ex2: 0.693 0.203 0.776')

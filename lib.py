@@ -2,13 +2,8 @@
 from numpy import *
 from scipy import io, optimize as op, special as sp
 
-def grad_des(t0,X,y,alpha,iters):
-    for i in range(iters):
-        t0-=alpha*igrad(t0,X,y)
-    return t0
-
 def h(X,t):
-    return sigmoid(X.dot(t))
+    return sp.expit(X.dot(t))
 
 def hg(x):
     return x*(1-x)
@@ -29,6 +24,23 @@ def ifmin(t0,X,y):
 def igrad(t,X,y):
     m=y.shape[0]
     return X.T.dot(hi(X,t)-y)/m
+
+def igrad_des(t0,X,y,alpha,iters):
+    for i in range(iters):
+        t0-=alpha*igrad(t0,X,y)
+    return t0
+
+def inorm_eqn(X,y):
+    t=linalg.inv(X.T.dot(X)).dot(X.T).dot(y)
+    return t
+
+def inorm_feature(X):
+    m=X.shape[0]
+    X=X[:,1:]
+    X_mean=ones((m,1)).dot(mean(X,0).reshape((1,-1)))
+    X_std=ones((m,1)).dot(std(X,0).reshape((1,-1)))
+    X_norm=(X-X_mean)/X_std
+    return c_[ones((m,1)),X_norm]
 
 def load_data(filename):
     data=loadtxt(filename,delimiter=',')
@@ -52,49 +64,68 @@ def load_nn(filename):
     t2=data['Theta2']
     return t1,t2
 
-def ncost(t,n,X,yk,lamb):
+def ncost(t,n,X,yy,lamb):
     m=X.shape[0]
-    xout=xx(len(n)-1,t,n,X)
-    J=sum(-yk*log(xout)-(1-yk)*log(1-xout))/m
-    for k in range(1,len(n)):
-        J+=sum(tt(k,t,n)[1:]**2)*lamb/(2*m)
+    xout=nx(len(n)-1,t,n,X)
+    J=sum(-yy*log(xout)-(1-yy)*log(1-xout))/m
+    for i in range(1,len(n)):
+        J+=sum(nt(i,t,n)[1:]**2)*lamb/(2*m)
     return J
 
-def nfmin_cg(t0,n,X,yk,lamb):
-    return op.fmin_cg(ncost,fprime=ngrad,x0=t0,args=(n,X,yk,lamb),maxiter=50,disp=False)
+def nfmin_cg(t0,n,X,yy,lamb):
+    return op.fmin_cg(ncost,fprime=ngrad,x0=t0,args=(n,X,yy,lamb),maxiter=50,disp=False)
 
-def ngrad(t,n,X,yk,lamb):
+def ngrad(t,n,X,yy,lamb):
     def dt(k):
         if 0<k<len(n)-1:
-            return dt(k+1).dot(tt(k+1,t,n)[1:].T)*hg(xx(k,t,n,X)[:,1:])
+            return dt(k+1).dot(nt(k+1,t,n)[1:].T)*hg(nx(k,t,n,X)[:,1:])
         elif k==len(n)-1:
-            return xx(k,t,n,X)-yk
+            return nx(k,t,n,X)-yy
     def gg(k):
         m=X.shape[0]
-        return xx(k-1,t,n,X).T.dot(dt(k))/m+r_[0*tt(k,t,n)[:1],tt(k,t,n)[1:]*lamb/m]
+        return nx(k-1,t,n,X).T.dot(dt(k))/m+r_[0*nt(k,t,n)[:1],nt(k,t,n)[1:]*lamb/m]
     g=[]
-    for k in range(1,len(n)):
-        g=append(g,gg(k))
+    for i in range(1,len(n)):
+        g=append(g,gg(i))
     return g
-
-def norm_eqn(X,y):
-    t=linalg.inv(X.T.dot(X)).dot(X.T).dot(y)
-    return t
-
-def norm_feature(X):
-    m=X.shape[0]
-    X=X[:,1:]
-    X_mean=ones((m,1)).dot(mean(X,0).reshape((1,-1)))
-    X_std=ones((m,1)).dot(std(X,0).reshape((1,-1)))
-    X_norm=(X-X_mean)/X_std
-    return c_[ones((m,1)),X_norm]
 
 def npredict(t,n,X,y):
     m=X.shape[0]
-    xout=xx(len(n)-1,t,n,X)
+    xout=nx(len(n)-1,t,n,X)
     p=argmax(xout,1)+1
     num=m-count_nonzero(p-y.flatten())
     print('%.2f%%' %(num*100/m))
+
+def nrandt(n):
+    t_count=0
+    for i in range(len(n)-1):
+        t_count+=(n[i]+1)*n[i+1]
+    return 1-2*random.random(t_count)
+
+def nt(k,t,n):
+    def nk(k):
+        return (n[k-1]+1)*n[k]
+    if k==1:
+        return t[:nk(k)].reshape(((n[k-1]+1),n[k]))
+    elif 1<k<len(n):
+        return t[nk(k-1):nk(k-1)+nk(k)].reshape(((n[k-1]+1),n[k]))
+
+def nx(k,t,n,X):
+    m=X.shape[0]
+    if k==0:
+        return X
+    elif 0<k<len(n)-1:
+        return c_[ones((m,1)),h(nx(k-1,t,n,X),nt(k,t,n))]
+    elif k==len(n)-1:
+        return h(nx(k-1,t,n,X),nt(k,t,n))
+
+def nyy(n,y):
+    m=y.shape[0]
+    yy=zeros((m,n[-1]))
+    for i in range(m):
+        for j in range(n[-1]):
+            yy[i,j]=(j==y[i]-1)
+    return yy
 
 def ocost(t,X,y,lamb):
     m=X.shape[0]
@@ -120,38 +151,3 @@ def opredict(t,X,y):
     p=argmax(X.dot(t),1)+1
     num=m-count_nonzero(p-y.flatten())
     print('%.2f%%' %(num*100/m))
-
-def randt(n):
-    t_count=0
-    for i in range(len(n)-1):
-        t_count+=(n[i]+1)*n[i+1]
-    return 1-2*random.random(t_count)
-
-def sigmoid(z):
-    return sp.expit(z)
-    # return 1/(1+exp(-z))
-
-def tt(k,t,n):
-    def nk(k):
-        return (n[k-1]+1)*n[k]
-    if k==1:
-        return t[:nk(k)].reshape(((n[k-1]+1),n[k]))
-    elif 1<k<len(n):
-        return t[nk(k-1):nk(k-1)+nk(k)].reshape(((n[k-1]+1),n[k]))
-
-def xx(k,t,n,X):
-    m=X.shape[0]
-    if k==0:
-        return X
-    elif 0<k<len(n)-1:
-        return c_[ones((m,1)),h(xx(k-1,t,n,X),tt(k,t,n))]
-    elif k==len(n)-1:
-        return h(xx(k-1,t,n,X),tt(k,t,n))
-
-def yy(n,y):
-    m=y.shape[0]
-    yk=zeros((m,n[-1]))
-    for i in range(m):
-        for j in range(n[-1]):
-            yk[i,j]=(j==y[i]-1)
-    return yk
