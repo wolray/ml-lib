@@ -11,4 +11,4 @@ for k in range(n[-1]):
     tk[:,k]=ofmin_cg(t0,X,(y==k+1)+0,lamb)
 
 opredict(tk,X,y)
-print('PDF: 94.9%')
+print('ex3: 94.9%')

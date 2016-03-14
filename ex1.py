@@ -11,4 +11,4 @@ t=grad_des(t0,X,y,alpha,iters)
 p1=10000*array([1,3.5]).dot(t)[0]
 p2=10000*array([1,7]).dot(t)[0]
 print(J,p1,p2)
-print('MATLAB: 32.0727 4519.767868 45342.450129')
+print('ex1: 32.0727 4519.767868 45342.450129')
