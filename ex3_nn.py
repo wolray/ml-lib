@@ -1,11 +1,19 @@
-from lib import *
+from lib_nn import *
 
-X,y=load_mat('ex3data1.mat')
-t1_trans,t2_trans=load_nn('ex3weights.mat')
+data=io.loadmat('ex3data1.mat')
+X=data['X']
+X=add_ones(X)
+y=data['y']
+
+data=io.loadmat('ex3weights.mat')
+t1_trans=data['Theta1']
+t2_trans=data['Theta2']
+t=append(t1_trans.T,t2_trans.T)
+
 n=[400,25,10]
 lamb=0
 
-t=append(t1_trans.T,t2_trans.T)
+p=predict(t,n,X,y)
 
-npredict(t,n,X,y)
-print('ex3_nn: 97.5%')
+print2([p])
+print('MATLAB: 97.5%')

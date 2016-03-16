@@ -1,14 +1,20 @@
-from lib import *
+from lib_lg import *
 
-X,y=load_mat('ex3data1.mat')
-n=[X.shape[1]-1,10]
+data=io.loadmat('ex3data1.mat')
+X=data['X']
+n0=X.shape[1]
+X=add_ones(X)
+y=data['y']
+
+n=[n0,10]
 t0=zeros((n[0]+1,1))
-
 lamb=0.1
+
 tt=zeros((n[0]+1,n[1]))
-
+yy=ys(n,y)
 for k in range(n[-1]):
-    tt[:,k]=ofmin_cg(t0,X,(y==k+1)+0,lamb)
+    tt[:,k]=cfmin_cg(t0,X,yy[:,k],lamb)
+p=predict(tt,X,y)
 
-opredict(tt,X,y)
-print('ex3: 94.9%')
+print2([p])
+print('MATLAB: 94.9%')
