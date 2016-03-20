@@ -51,7 +51,7 @@ def nx(k,t,n,X):
 def predict(t,n,X,y):
     m=X.shape[0]
     xout=nx(len(n)-1,t,n,X)
-    p=argmax(xout,1)+1
+    p=xout.argmax(1)+1
     num=m-count_nonzero(p-y.ravel())
     return num*100/m
 

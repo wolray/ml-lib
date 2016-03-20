@@ -20,9 +20,10 @@ def grad(t,X,y,lamb):
     return X.T.dot(h(X,t)-y)/m+r_[t[:1]*0,t[1:]]*lamb/m
 
 def grad_des(t0,X,y,lamb,alpha,iters):
+    t=t0
     for i in range(iters):
-        t0-=alpha*grad(t0,X,y,lamb)
-    return t0
+        t-=alpha*grad(t,X,y,lamb)
+    return t
 
 def h(X,t):
     return X.dot(t)

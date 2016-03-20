@@ -9,7 +9,6 @@ yval=data['yval'].ravel()
 clf=svm.SVC(C=1,gamma=0.01)
 svm1=clf.fit(X,y)
 p1=svm1.predict(Xval)
-
 printd(p1[:20])
 print('MATLAB: 1 1 0 0 1 1 0 1 1 1 1 1 1 1 1 1 1 1 1 1')
 
@@ -19,6 +18,5 @@ paras={'C':Cs,'gamma':gammas}
 grid=grid_search.GridSearchCV(clf,paras)
 svm2=grid.fit(X,y)
 p2=svm2.predict(Xval)
-
 printd(p2[:20])
 print('MATLAB: 0 1 0 0 0 0 0 1 1 1 1 1 0 0 1 0 0 1 0 0')
