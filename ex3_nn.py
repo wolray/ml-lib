@@ -1,4 +1,4 @@
-from lib_nn import *
+from lib import *
 
 data=io.loadmat('ex3data1.mat')
 X=data['X']
@@ -12,6 +12,6 @@ t=append(t1_trans.T,t2_trans.T)
 n=[400,25,10]
 lamb=0
 
-p=predict(t,n,X,y)
+p=nn_predict(t,n,X,y)
 print2([p])
 print('MATLAB: 97.5%')

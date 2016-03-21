@@ -1,4 +1,4 @@
-from lib_ln import *
+from lib import *
 
 data=loadtxt('ex1data2.txt',delimiter=',')
 X=data[:,:-1]
