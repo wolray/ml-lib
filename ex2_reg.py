@@ -3,7 +3,7 @@ from lib import *
 data=loadtxt('ex2data1.txt',delimiter=',')
 X=data[:,:-1]
 X=add_ones(X)
-y=data[:,-1:].ravel()
+y=data[:,-1]
 
 lamb=[0,1,10,100]
 t0=zeros(X.shape[1])

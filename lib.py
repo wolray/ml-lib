@@ -162,7 +162,7 @@ def predict(t,X,y):
     m=X.shape[0]
     xout=h(X,t)
     p=argmax(xout,1)+1
-    num=m-count_nonzero(p-y.ravel())
+    num=m-count_nonzero(p-y)
     return (num*100)/m
 
 def print1(lis):
