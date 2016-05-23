@@ -3,25 +3,30 @@ from numpy import *
 from scipy import io, optimize as op, special as sp
 from sklearn import svm, grid_search
 
-def add_ones(X):
-    m=X.shape[0]
-    return c_[ones((m,1)),X]
+def AddOnes(x):
+    m=x.shape[0]
+    return c_[ones((m,1)),x]
 
-def cf_cost(xt,n,Y,R,lamb):
-    X,t=nxt(xt,n)
-    return sum(((hi(X,t)-Y)*R)**2)/2+(sum(X**2)+sum(t**2))*lamb/2
+def CfPara(xt,n):
+    x=xt[:n[0]*n[1]].reshape((n[0],n[1]))
+    t=xt[n[0]*n[1]:].reshape((n[1],n[2]))
+    return x,t
 
-def cf_grad(xt,n,Y,R,lamb):
-    X,t=nxt(xt,n)
-    X_grad=(hi(X,t)-Y)*R.dot(t.T)+X*lamb
-    t_grad=((hi(X,t)-Y)*R).T.dot(X)+t*lamb
-    return append(X_grad,t_grad)
+def CfCost(xt,n,y,r,lamb):
+    x,t=CfPara(xt,n)
+    return sum(((HLin(x,t)-y)*r)**2)/2+(sum(x**2)+sum(t**2))*lamb/2
 
-def cost(t,X,y,lamb):
-    m=X.shape[0]
-    return sum(-y*log(h(X,t))-(1-y)*log(1-h(X,t)))/m+sum(t[1:]**2)*lamb/(2*m)
+def CfGrad(xt,n,y,r,lamb):
+    x,t=CfPara(xt,n)
+    x_grad=(HLin(x,t)-y)*r.dot(t.T)+x*lamb
+    t_grad=((HLin(x,t)-y)*r).T.dot(x)+t*lamb
+    return append(x_grad,t_grad)
 
-def epsilon(yval,pval):
+def Cost(t,x,y,lamb):
+    m=x.shape[0]
+    return sum(-y*log(H(x,t))-(1-y)*log(1-H(x,t)))/m+sum(t[1:]**2)*lamb/(2*m)
+
+def Epsilon(yval,pval):
     f1_best=eps_best=0
     for eps in linspace(amin(pval),amax(pval),1000):
         tp=sum((yval==1)*(pval<eps))
@@ -35,185 +40,180 @@ def epsilon(yval,pval):
             eps_best=eps
     return eps_best,f1_best
 
-def gauss(X,mu,sigma):
-    n=X.shape[1]
-    p=((2*pi)**n*linalg.det(sigma))**(-1/2)*exp(-1/2*((X-mu).dot(linalg.pinv(sigma))*(X-mu)).sum(1))
+def Gauss(x,mu,sigma):
+    n=x.shape[1]
+    p=((2*pi)**n*linalg.det(sigma))**(-1/2)*exp(-1/2*((x-mu).dot(linalg.pinv(sigma))*(x-mu)).sum(1))
     return p.reshape((-1,1))
 
-def grad(t,X,y,lamb):
-    m=X.shape[0]
-    return X.T.dot(h(X,t)-y)/m+r_[t[:1]*0,t[1:]]*lamb/m
+def Grad(t,x,y,lamb):
+    m=x.shape[0]
+    return x.T.dot(H(x,t)-y)/m+r_[t[:1]*0,t[1:]]*lamb/m
 
-def grad_des(t0,X,y,lamb,alpha,iters):
+def GradDes(t0,x,y,lamb,alpha,iters):
     t=t0
     for i in range(iters):
-        t-=alpha*igrad(t,X,y,lamb)
+        t-=alpha*LinGrad(t,x,y,lamb)
     return t
 
-def h(X,t):
-    return sp.expit(X.dot(t)) # 1/(1+exp(-z))
+def H(x,t):
+    return sp.expit(x.dot(t)) # 1/(1+exp(-z))
 
-def hg(x):
+def HG(x):
     return x*(1-x)
 
-def hi(X,t):
-    return X.dot(t)
+def HLin(x,t):
+    return x.dot(t)
 
-def icost(t,X,y,lamb):
-    m=X.shape[0]
-    return sum((hi(X,t)-y)**2)/(2*m)+sum(t[1:]**2)*lamb/(2*m)
+def LinCost(t,x,y,lamb):
+    m=x.shape[0]
+    return sum((HLin(x,t)-y)**2)/(2*m)+sum(t[1:]**2)*lamb/(2*m)
 
-def igrad(t,X,y,lamb):
-    m=X.shape[0]
-    return X.T.dot(hi(X,t)-y)/m+r_[t[:1]*0,t[1:]]*lamb/m
+def LinGrad(t,x,y,lamb):
+    m=x.shape[0]
+    return x.T.dot(HLin(x,t)-y)/m+r_[t[:1]*0,t[1:]]*lamb/m
 
-def kmeans(X,c0,iters):
-    m,n=X.shape
+def Kmeans(x,c0,iters):
+    m,n=x.shape
     k=c0.shape[0]
-    def clust(X,c):
-        J=zeros((m,k))
+    def Clust(x,c):
+        cost=zeros((m,k))
         for i in range(m):
             for j in range(k):
-                J[i,j]=sum((X[i,:]-c[j,:])**2)
-        return J.argmin(1)
-    def newcent(X,idx,k):
+                cost[i,j]=sum((x[i,:]-c[j,:])**2)
+        return cost.argmin(1)
+    def NewCent(x,idx,k):
         c=zeros((k,n))
         for i in range(k):
             p=where(idx==i)[0]
-            c[i,:]=sum(X[p,:],0)/len(p)
+            c[i,:]=x[p,:].sum(0)/len(p)
         return c
     c=c0
     for i in range(iters):
-        idx=clust(X,c)
-        c=newcent(X,idx,k)
+        idx=Clust(x,c)
+        c=NewCent(x,idx,k)
     return c,idx
 
-def nn_cost(t,n,X,yy,lamb):
-    m=X.shape[0]
-    xout=nx(len(n)-1,t,n,X)
-    J=sum(-yy*log(xout)-(1-yy)*log(1-xout))/m
+def NnCost(t,n,x,yy,lamb):
+    m=x.shape[0]
+    xout=Nx(len(n)-1,t,n,x)
+    cost=sum(-yy*log(xout)-(1-yy)*log(1-xout))/m
     for i in range(1,len(n)):
-        J+=sum(nt(i,t,n)[1:]**2)*lamb/(2*m)
-    return J
+        cost+=sum(Nt(i,t,n)[1:]**2)*lamb/(2*m)
+    return cost
 
-def nn_grad(t,n,X,yy,lamb):
-    def dt(k):
+def NnGrad(t,n,x,yy,lamb):
+    def Dt(k):
         if 0<k<len(n)-1:
-            return dt(k+1).dot(nt(k+1,t,n)[1:].T)*hg(nx(k,t,n,X)[:,1:])
+            return Dt(k+1).dot(Nt(k+1,t,n)[1:].T)*HG(Nx(k,t,n,x)[:,1:])
         elif k==len(n)-1:
-            return nx(k,t,n,X)-yy
-    def gg(k):
-        m=X.shape[0]
-        return nx(k-1,t,n,X).T.dot(dt(k))/m+r_[nt(k,t,n)[:1]*0,nt(k,t,n)[1:]*lamb/m]
+            return Nx(k,t,n,x)-yy
+    def Gg(k):
+        m=x.shape[0]
+        return Nx(k-1,t,n,x).T.dot(Dt(k))/m+r_[Nt(k,t,n)[:1]*0,Nt(k,t,n)[1:]*lamb/m]
     g=[]
     for i in range(1,len(n)):
-        g=append(g,gg(i))
+        g=append(g,Gg(i))
     return g
 
-def nn_predict(t,n,X,y):
-    m=X.shape[0]
-    xout=nx(len(n)-1,t,n,X)
+def NnPredict(t,n,x,y):
+    m=x.shape[0]
+    xout=Nx(len(n)-1,t,n,x)
     p=xout.argmax(1)+1
     num=m-count_nonzero(p-y.ravel())
     return num*100/m
 
-def norm_eqn(X,y):
-    t=linalg.inv(X.T.dot(X)).dot(X.T).dot(y)
+def NormEqn(x,y):
+    t=linalg.inv(x.T.dot(x)).dot(x.T).dot(y)
     return t
 
-def norm_features(X):
-    m=X.shape[0]
-    X_mean=ones((m,1)).dot(mean(X,0).reshape((1,-1)))
-    X_std=ones((m,1)).dot(std(X,0,ddof=1).reshape((1,-1)))
-    return (X-X_mean)/X_std
+def NormFeat(x):
+    m=x.shape[0]
+    x_mean=ones((m,1)).dot(mean(x,0).reshape((1,-1)))
+    x_std=ones((m,1)).dot(std(x,0,ddof=1).reshape((1,-1)))
+    return (x-x_mean)/x_std
 
-def nt(k,t,n):
-    def nk(k):
+def Nt(k,t,n):
+    def Nk(k):
         return (n[k-1]+1)*n[k]
     if k==1:
-        return t[:nk(k)].reshape(((n[k-1]+1),n[k]))
+        return t[:Nk(k)].reshape(((n[k-1]+1),n[k]))
     elif 1<k<len(n):
-        return t[nk(k-1):nk(k-1)+nk(k)].reshape(((n[k-1]+1),n[k]))
+        return t[Nk(k-1):Nk(k-1)+Nk(k)].reshape(((n[k-1]+1),n[k]))
 
-def nx(k,t,n,X):
+def Nx(k,t,n,x):
     if k==0:
-        return X
+        return x
     elif 0<k<len(n)-1:
-        return add_ones(h(nx(k-1,t,n,X),nt(k,t,n)))
+        return AddOnes(H(Nx(k-1,t,n,x),Nt(k,t,n)))
     elif k==len(n)-1:
-        return h(nx(k-1,t,n,X),nt(k,t,n))
+        return H(Nx(k-1,t,n,x),Nt(k,t,n))
 
-def nxt(xt,n):
-    X=xt[:n[0]*n[1]].reshape((n[0],n[1]))
-    t=xt[n[0]*n[1]:].reshape((n[1],n[2]))
-    return X,t
+def PCA(x,k):
+    m=x.shape[0]
+    uu,ss,vv=linalg.svd(x.T.dot(x)/m)
+    return x.dot(uu[:,:k])
 
-def pca(X,k):
-    m=X.shape[0]
-    U,S,V=linalg.svd(X.T.dot(X)/m)
-    return X.dot(U[:,:k])
+def PCABack(x,k):
+    m=x.shape[0]
+    uu,ss,vv=linalg.svd(x.T.dot(x)/m)
+    return x.dot(uu[:,:k]).dot(uu[:,:k].T)
 
-def pca_back(X,k):
-    m=X.shape[0]
-    U,S,V=linalg.svd(X.T.dot(X)/m)
-    return X.dot(U[:,:k]).dot(U[:,:k].T)
-
-def predict(t,X,y):
-    m=X.shape[0]
-    xout=h(X,t)
+def Predict(t,x,y):
+    m=x.shape[0]
+    xout=H(x,t)
     p=argmax(xout,1)+1
     num=m-count_nonzero(p-y)
     return (num*100)/m
 
-def print1(lis):
+def Print1(lis):
     out=''
     for i in lis:
         out+=' %.1f' %i
-    print('\nPYTHON:'+out)
+    print('\nPython:'+out)
 
-def print2(lis):
+def Print2(lis):
     out=''
     for i in lis:
         out+=' %.2f' %i
-    print('\nPYTHON:'+out)
+    print('\nPython:'+out)
 
-def print3(lis):
+def Print3(lis):
     out=''
     for i in lis:
         out+=' %.3f' %i
-    print('\nPYTHON:'+out)
+    print('\nPython:'+out)
 
-def print4(lis):
+def Print4(lis):
     out=''
     for i in lis:
         out+=' %.4f' %i
-    print('\nPYTHON:'+out)
+    print('\nPython:'+out)
 
-def printd(lis):
+def Printd(lis):
     out=''
     for i in lis:
         out+=' %d' %i
-    print('\nPYTHON:'+out)
+    print('\nPython:'+out)
 
-def randc(X,k):
-    m=X.shape[0]
-    return X[random.choice(m,k),:]
+def RandC(x,k):
+    m=x.shape[0]
+    return x[random.choice(m,k),:]
 
-def randt(n):
+def RandT(n):
     t_count=0
     for i in range(len(n)-1):
         t_count+=(n[i]+1)*n[i+1]
     return 1-2*random.random(t_count)
 
-def stat(X,c=0):
-    mu=X.mean(0)
+def Stat(x,c=0):
+    mu=x.mean(0)
     if c:
-        sigma=cov(X.T)
+        sigma=cov(x.T)
     else:
-        sigma=diag(X.var(0))
+        sigma=diag(x.var(0))
     return mu,sigma
 
-def ys(y,n):
+def Ny(y,n):
     m=y.size
     yy=zeros((m,n[-1]))
     for i in range(m):

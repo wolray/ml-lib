@@ -1,15 +1,15 @@
 from lib import *
 
 data=io.loadmat('ex7data1.mat')
-X=data['X']
-X=norm_features(X)
+x=data['X']
+x=NormFeat(x)
 
 k=1
 
-Z=pca(X,k)
-print4(Z[0])
+z=PCA(x,k)
+Print4(z[0])
 print('MATLAB: 1.4813')
 
-X_re=pca_back(X,k)
-print4(X_re[0,:])
+x_re=PCABack(x,k)
+Print4(x_re[0,:])
 print('MATLAB: -1.0474 -1.0474')

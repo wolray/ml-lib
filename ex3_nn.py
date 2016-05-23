@@ -1,8 +1,8 @@
 from lib import *
 
 data=io.loadmat('ex3data1.mat')
-X=data['X']
-X=add_ones(X)
+x=data['X']
+x=AddOnes(x)
 y=data['y']
 
 data=io.loadmat('ex3weights.mat')
@@ -12,6 +12,6 @@ t=append(t1_trans.T,t2_trans.T)
 n=[400,25,10]
 lamb=0
 
-p=nn_predict(t,n,X,y)
-print2([p])
+p=NnPredict(t,n,x,y)
+Print2([p])
 print('MATLAB: 97.5%')
