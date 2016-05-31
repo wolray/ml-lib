@@ -52,7 +52,7 @@ def Grad(t,x,y,lamb):
 def GradDes(t0,x,y,lamb,alpha,iters):
     t=t0
     for i in range(iters):
-        t-=alpha*LinGrad(t,x,y,lamb)
+        t=t-alpha*LinGrad(t,x,y,lamb)
     return t
 
 def H(x,t):
@@ -119,8 +119,7 @@ def NnPredict(t,n,x,y):
     m=x.shape[0]
     xout=Nx(len(n)-1,t,n,x)
     p=xout.argmax(1)+1
-    num=m-count_nonzero(p-y.ravel())
-    return num*100/m
+    return sum(p==y.ravel())*100/m
 
 def NormEqn(x,y):
     t=linalg.inv(x.T.dot(x)).dot(x.T).dot(y)
@@ -162,8 +161,7 @@ def Predict(t,x,y):
     m=x.shape[0]
     xout=H(x,t)
     p=argmax(xout,1)+1
-    num=m-count_nonzero(p-y)
-    return (num*100)/m
+    return sum(p==y)*100/m
 
 def Print1(lis):
     out=''
