@@ -1,4 +1,3 @@
-setwd('D:/sync/ml/ml-lib/')
 source('D:/sync/ml/ml-lib/lib.r')
 
 data=read.table('ex1data1.txt',sep=',')

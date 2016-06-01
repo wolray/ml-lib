@@ -1,3 +1,6 @@
+from imp import reload
+import lib
+reload(lib)
 from lib import *
 
 data=io.loadmat('ex3data1.mat')

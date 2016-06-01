@@ -1,3 +1,6 @@
+from imp import reload
+import lib
+reload(lib)
 from lib import *
 
 data=loadtxt('ex1data2.txt',delimiter=',')
