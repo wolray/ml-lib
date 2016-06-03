@@ -3,7 +3,7 @@ import lib
 reload(lib)
 from lib import *
 
-data=io.loadmat('ex3data1.mat')
+data=io.loadmat('ex4data1.mat')
 x=data['X']
 x=AddOnes(x)
 y=data['y']
@@ -21,7 +21,6 @@ Print4([cost])
 print('MATLAB: 0.3838')
 
 t0=RandT(n)
-
 t=op.fmin_cg(NnCost,fprime=NnGrad,x0=t0,args=(n,x,yy,lamb),maxiter=50,disp=False)
 p=NnPredict(t,n,x,y)
 Print2([p])

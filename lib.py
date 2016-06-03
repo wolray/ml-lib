@@ -58,9 +58,6 @@ def GradDes(t0,x,y,lamb,alpha,iters):
 def H(x,t):
     return sp.expit(x.dot(t)) # 1/(1+exp(-z))
 
-def HG(x):
-    return x*(1-x)
-
 def HLin(x,t):
     return x.dot(t)
 
@@ -102,9 +99,11 @@ def NnCost(t,n,x,yy,lamb):
     return cost
 
 def NnGrad(t,n,x,yy,lamb):
+    def Hg(x):
+        return x*(1-x)
     def Dt(k):
         if 0<k<len(n)-1:
-            return Dt(k+1).dot(Nt(k+1,t,n)[1:].T)*HG(Nx(k,t,n,x)[:,1:])
+            return Dt(k+1).dot(Nt(k+1,t,n)[1:].T)*Hg(Nx(k,t,n,x)[:,1:])
         elif k==len(n)-1:
             return Nx(k,t,n,x)-yy
     def Gg(k):
